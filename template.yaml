@@ -5,6 +5,14 @@ Description: >
 
   Sample SAM Template for sam-app
 
+Parameters:
+  CorsAllowedOrigins:
+    Type: CommaDelimitedList
+    # Uncomment the following to set the default value. Then rerun sam local start-api.
+    # Default: "https://www.google.com"
+    # Default: ["https://www.google.com"]
+    Description: The list of allowed origins for CORS
+
 # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
   Function:
@@ -14,6 +22,16 @@ Globals:
     LoggingConfig:
       LogFormat: JSON
 Resources:
+  HttpApiGatewayEndpoint:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      CorsConfiguration:
+        AllowMethods:
+          - GET
+        AllowHeaders:
+          - Authorization
+        AllowOrigins: !Ref CorsAllowedOrigins
+
   HelloWorldFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
@@ -24,10 +42,11 @@ Resources:
       - x86_64
       Events:
         HelloWorld:
-          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Type: HttpApi # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
             Path: /hello
             Method: get
+            ApiId: !Ref HttpApiGatewayEndpoint
             
     Metadata: # Manage esbuild properties
       BuildMethod: esbuild
@@ -44,7 +63,7 @@ Outputs:
   # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
   HelloWorldApi:
     Description: API Gateway endpoint URL for Prod stage for Hello World function
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/"
+    Value: !Sub "https://${HttpApiGatewayEndpoint}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/"
   HelloWorldFunction:
     Description: Hello World Lambda Function ARN
     Value: !GetAtt HelloWorldFunction.Arn
